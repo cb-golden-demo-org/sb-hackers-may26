@@ -1,0 +1,30 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: policy-gate-test
+
+# Lightweight workflow for testing the Unify policy engine and implicit scans.
+# No secrets, no registry, no cluster: the build and deploy jobs only print.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Simulated build
+        uses: docker://alpine:3.20
+        shell: sh
+        run: echo "building ${{ cloudbees.scm.sha }}"
+
+  deploy:
+    needs:
+      - build
+    steps:
+      - name: Simulated deploy
+        uses: docker://alpine:3.20
+        shell: sh
+        run: echo "deploying ${{ cloudbees.scm.sha }}"

@@ -44,6 +44,26 @@ jobs:
           SUBJECT: ${{ steps.scan.outputs.policy-subject }}
         run: |
           if [ -z "$SUBJECT" ]; then echo "NO policy-subject output from this scanner"; else echo "policy-subject (first 3000 chars):"; printf '%s' "$SUBJECT" | head -c 3000; echo; fi
+      # Diagnostic: evaluate explicitly through the policy service (not the automatic injection),
+      # to tell whether policy evaluation works at all in this org. Policies here are WARN only.
+      - name: Evaluate policy (explicit diagnostic)
+        id: evaluate
+        uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
+        with:
+          input-data: ${{ steps.scan.outputs.policy-subject }}
+          checkpoint-type: workflow
+          checkpoint-position: exit
+      - name: Show explicit evaluation result
+        uses: docker://alpine:3.20
+        shell: sh
+        env:
+          ACTION: ${{ steps.evaluate.outputs.action }}
+          DETAILS: ${{ steps.evaluate.outputs.details }}
+        run: |
+          echo "policy action: $ACTION"
+          echo "details (first 3000 chars):"
+          printf '%s' "$DETAILS" | head -c 3000
+          echo
 
   scan-sonarqube-bundled:
     if: ${{ inputs.scanner == 'sonarqube-bundled' }}

@@ -1,0 +1,19 @@
+schema_version: alpha
+name: pe-uat-1-baseline - warn on critical vulnerabilities
+description: PE UAT test 1 (baseline, no policy step). Repo cb-golden-demo-org/sb-hackers-may26, branch pe-uat-1-baseline-no-policy-step, workflow pe-uat-1-baseline. Policy file policies/pe-uat-1-baseline.policy.yaml. WARN only. Safe to delete.
+category: Security
+subjects:
+  - type: vulnerability_scan
+scope:
+  - type: workflow
+    org_id: fcf32b98-01a8-4784-80c9-8b44e336644d
+    component_id: be226259-df6a-437b-8116-7d8521efc6f4
+    workflow_name: pe-uat-1-baseline
+rules:
+  - name: Critical vulnerabilities
+    action: WARN
+    checks:
+      - name: critical count above zero
+        field: "vulnerability_scan.summary.by_severity.critical"
+        operator: gt
+        value: 0

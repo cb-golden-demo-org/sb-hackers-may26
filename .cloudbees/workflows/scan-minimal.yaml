@@ -19,6 +19,11 @@ jobs:
         uses: cloudbees-io/gosec-plugin@v2
       - name: Scan with gitleaks
         uses: cloudbees-io/gitleaks-plugin@v1
+      - name: Check policies
+        uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
+        with:
+          checkpoint-type: workflow
+          checkpoint-position: exit
 
   deploy:
     needs:

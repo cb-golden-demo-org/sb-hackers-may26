@@ -1,0 +1,74 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: gen2-policytest-standard
+
+# STANDARD (non-staged) workflow for the Unify Policy Engine UAT. Pre-enablement test rig, not a demo.
+# Policies are scoped to this workflow by name; there is no metadata.stages block on purpose,
+# because staged workflows are out of scope for the UAT.
+#
+# Run manually and choose ONE scanner with the "scanner" input (one per run; two scans of the
+# same subject type in one run are rejected):
+#   gosec                - Go SAST, no credentials
+#   sonarqube-bundled    - bundled SonarQube action, no server needed
+#
+# Each scan job prints the policy-subject it produced. deploy-simulated is the job a policy
+# gates (entry), and the workflow exit is where a severity threshold is checked.
+
+on:
+  workflow_dispatch:
+    inputs:
+      scanner:
+        type: string
+        required: false
+        default: gosec
+        description: "One of: gosec, sonarqube-bundled"
+
+permissions:
+  id-token: write
+  scm-token-own: read
+  scm-token-org: read
+
+jobs:
+  scan-gosec:
+    if: ${{ inputs.scanner == 'gosec' }}
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Scan with gosec
+        id: scan
+        uses: cloudbees-io/gosec-plugin@v2
+      - name: Show policy subject
+        uses: docker://alpine:3.20
+        shell: sh
+        env:
+          SUBJECT: ${{ steps.scan.outputs.policy-subject }}
+        run: |
+          if [ -z "$SUBJECT" ]; then echo "NO policy-subject output from this scanner"; else echo "policy-subject (first 3000 chars):"; printf '%s' "$SUBJECT" | head -c 3000; echo; fi
+
+  scan-sonarqube-bundled:
+    if: ${{ inputs.scanner == 'sonarqube-bundled' }}
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Scan with SonarQube bundled
+        id: scan
+        uses: cloudbees-io/sonarqube-bundled-sast-scan-code@v2
+        with:
+          language: LANGUAGE_GO
+      - name: Show policy subject
+        uses: docker://alpine:3.20
+        shell: sh
+        env:
+          SUBJECT: ${{ steps.scan.outputs.policy-subject }}
+        run: |
+          if [ -z "$SUBJECT" ]; then echo "NO policy-subject output from this scanner"; else echo "policy-subject (first 3000 chars):"; printf '%s' "$SUBJECT" | head -c 3000; echo; fi
+
+  deploy-simulated:
+    needs:
+      - scan-gosec
+      - scan-sonarqube-bundled
+    steps:
+      - name: Simulated deploy
+        uses: docker://alpine:3.20
+        shell: sh
+        run: echo "deploying ${{ cloudbees.scm.sha }} (simulated, scanner=${{ inputs.scanner }})"

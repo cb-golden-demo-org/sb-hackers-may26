@@ -18,10 +18,12 @@ jobs:
       - name: Scan with gosec
         uses: cloudbees-io/gosec-plugin@v2
       - name: Scan with gitleaks
+        id: scan
         uses: cloudbees-io/gitleaks-plugin@v1
       - name: Check policies
         uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
         with:
+          input-data: ${{ steps.scan.outputs.policy-subject }}
           checkpoint-type: workflow
           checkpoint-position: exit
 

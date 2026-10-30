@@ -1,0 +1,37 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: pe-uat-11-combined-lab
+
+# Policy Engine UAT combined lab: Gosec and the SonarQube plugin in one job, then the policy check.
+# Step 1 runs with no policies to read the combined counts; step 2 attaches the lab policies
+# written against those counts. Tracker: stu-claude/investigations/policy-engine-scanner-test-tracker.md
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  scm-token-own: read
+  scm-token-org: read
+
+jobs:
+  scan-both:
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Scan with gosec
+        id: scan-gosec
+        uses: cloudbees-io/gosec-plugin@v2
+      - name: Scan with SonarQube plugin (own server; url/username are properties, password is a secret)
+        id: scan-sonarqube
+        uses: cloudbees-io/sonarqube-plugin@v1
+        with:
+          url: ${{ vars.SONARQUBE_URL }}
+          username: ${{ vars.SONARQUBE_USERNAME }}
+          password: ${{ secrets.SONARQUBE_PASSWORD }}
+      - name: Check policies
+        uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
+        with:
+          input-data: ${{ steps.scan-sonarqube.outputs.policy-subject }}
+          checkpoint-type: workflow
+          checkpoint-position: exit

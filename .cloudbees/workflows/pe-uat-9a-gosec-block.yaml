@@ -1,0 +1,40 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: pe-uat-9a-gosec-block
+
+# Policy Engine UAT test 9a: does a BLOCK action stop the build? Same planted findings and root
+# go.mod as test 7a-6 (Gosec reports 2 high), but the rule action is BLOCK. If BLOCK works, the
+# scan job fails at the policy step and the deploy job does not run.
+# Tracker: stu-claude/investigations/policy-engine-scanner-test-tracker.md
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  scm-token-own: read
+  scm-token-org: read
+
+jobs:
+  scan-gosec:
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Scan with gosec
+        id: scan-gosec
+        uses: cloudbees-io/gosec-plugin@v2
+      - name: Check policies
+        uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
+        with:
+          input-data: ${{ steps.scan-gosec.outputs.policy-subject }}
+          checkpoint-type: workflow
+          checkpoint-position: exit
+
+  deploy:
+    needs:
+      - scan-gosec
+    steps:
+      - name: Deploy (simulated)
+        uses: docker://alpine:3.20
+        shell: sh
+        run: echo "deploy ran, so the block did not stop the build"

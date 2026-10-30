@@ -1,0 +1,32 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: pe-uat-13b-block-entry-no-subject
+
+# Policy Engine UAT test 13 (BLOCK at workflow entry with no scan data): where a BLOCK lands. Gosec data is critical 0, high 2, medium 2, low 0, total 4.
+# Tracker: stu-claude/investigations/policy-engine-scanner-test-tracker.md
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  scm-token-own: read
+  scm-token-org: read
+
+jobs:
+  scan:
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Check - workflow entry (no scan data yet)
+        uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
+        with:
+          checkpoint-type: workflow
+          checkpoint-position: entry
+      - name: Scan with gosec
+        id: scan-gosec
+        uses: cloudbees-io/gosec-plugin@v2
+      - name: Marker
+        uses: docker://alpine:3.20
+        shell: sh
+        run: echo "the job continued past the entry check, so the block did not stop it"

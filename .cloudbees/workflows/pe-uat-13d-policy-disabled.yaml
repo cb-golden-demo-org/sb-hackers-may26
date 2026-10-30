@@ -1,0 +1,29 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: pe-uat-13d-policy-disabled
+
+# Policy Engine UAT test 13 (a BLOCK policy that is disabled): where a BLOCK lands. Gosec data is critical 0, high 2, medium 2, low 0, total 4.
+# Tracker: stu-claude/investigations/policy-engine-scanner-test-tracker.md
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  scm-token-own: read
+  scm-token-org: read
+
+jobs:
+  scan:
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Scan with gosec
+        id: scan-gosec
+        uses: cloudbees-io/gosec-plugin@v2
+      - name: Check - workflow exit
+        uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
+        with:
+          input-data: ${{ steps.scan-gosec.outputs.policy-subject }}
+          checkpoint-type: workflow
+          checkpoint-position: exit

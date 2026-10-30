@@ -1,0 +1,21 @@
+schema_version: alpha
+name: pe-uat-13d-disabled - BLOCK policy disabled at policy level
+description: PE UAT block matrix case 13d-disabled - BLOCK policy disabled at policy level. Expected no evaluation row and the run to succeed. Gosec data is critical 0, high 2, medium 2, low 0, total 4. Workflow pe-uat-13d-policy-disabled only. Safe to delete.
+category: Security
+enabled: false
+subjects:
+  - type: vulnerability_scan
+scope:
+  - type: workflow
+    org_id: fcf32b98-01a8-4784-80c9-8b44e336644d
+    component_id: be226259-df6a-437b-8116-7d8521efc6f4
+    workflow_name: pe-uat-13d-policy-disabled
+    when: [exit]
+rules:
+  - name: 13d-disabled
+    action: BLOCK
+    checks:
+      - name: high
+        field: "vulnerability_scan.summary.by_severity.high"
+        operator: gt
+        value: 0

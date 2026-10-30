@@ -1,0 +1,42 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: pe-uat-6d-sonarqube-only
+
+# Policy Engine UAT test 6d: SonarQube plugin on its own, to see what it contributes to the
+# policy subject (test 6 with sonarqube added showed 36 critical findings, all SonarQube).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  scm-token-own: read
+  scm-token-org: read
+
+jobs:
+  scan-sonarqube:
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Scan with SonarQube plugin (own server; url/username are properties, password is a secret)
+        id: scan-sonarqube
+        uses: cloudbees-io/sonarqube-plugin@v1
+        with:
+          url: ${{ vars.SONARQUBE_URL }}
+          username: ${{ vars.SONARQUBE_USERNAME }}
+          password: ${{ secrets.SONARQUBE_PASSWORD }}
+      - name: Check policies
+        uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
+        with:
+          input-data: ${{ steps.scan-sonarqube.outputs.policy-subject }}
+          checkpoint-type: workflow
+          checkpoint-position: exit
+
+  deploy:
+    needs:
+      - scan-sonarqube
+    steps:
+      - name: Deploy (simulated)
+        uses: docker://alpine:3.20
+        shell: sh
+        run: echo "deploy"

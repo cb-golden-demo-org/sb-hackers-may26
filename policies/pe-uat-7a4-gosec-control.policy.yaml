@@ -1,6 +1,6 @@
 schema_version: alpha
 name: pe-uat-7a4-gosec-control - warn on high severity findings
-description: PE UAT test 7a-4 (control: raw gosec step plus the Unify gosec-plugin on the same planted fixture; rule WARNs when vulnerability_scan high count is above 0). Repo cb-golden-demo-org/sb-hackers-may26, branch pe-uat-7a4-gosec-control, workflow pe-uat-7a4-gosec-control. Policy file policies/pe-uat-7a4-gosec-control.policy.yaml. WARN only. Safe to delete.
+description: PE UAT test 7a-4 (control - raw gosec step plus the Unify gosec-plugin on the same planted fixture; rule WARNs when vulnerability_scan high count is above 0). Repo cb-golden-demo-org/sb-hackers-may26, branch pe-uat-7a4-gosec-control, workflow pe-uat-7a4-gosec-control. Policy file policies/pe-uat-7a4-gosec-control.policy.yaml. WARN only. Safe to delete.
 category: Security
 subjects:
   - type: vulnerability_scan

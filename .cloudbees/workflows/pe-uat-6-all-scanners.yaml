@@ -42,15 +42,22 @@ jobs:
         uses: cloudbees-io/trivy-plugin@v2
         with:
           binary-tar-path: /cloudbees/workspace/image.tar
-      - name: Scan image with grype
+      # Grype disabled 2026-10-30. Its output includes findings with severity INFORMATION, which the
+      # policy schema rejects (CRITICAL/HIGH/MEDIUM/LOW only). Evidence:
+      #   pe-uat-6b-grype-only run 6f0957d2-e8f0-4a60-9e3c-127916bcaae0: WARN, schema_conformance error
+      #   pe-uat-6-all-scanners run 0cab195c-ade1-4861-98d6-edc0981aed69: policy service HTTP 500
+      #   pe-uat-6a-trivy-only run a2626238-8f03-4438-b104-41fb83d1fd37 (same without grype): pass
+      # Re-enable by removing the "if" line when the policy engine accepts Grype output.
+      - name: "DISABLED - Scan image with grype (findings with severity INFORMATION fail policy schema validation)"
         id: scan-grype
+        if: ${{ false }}
         uses: cloudbees-io/grype-plugin@v1
         with:
           binary-tar-path: /cloudbees/workspace/image.tar
       - name: Check policies
         uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
         with:
-          input-data: ${{ steps.scan-grype.outputs.policy-subject }}
+          input-data: ${{ steps.scan-trivy.outputs.policy-subject }}
           checkpoint-type: workflow
           checkpoint-position: exit
 

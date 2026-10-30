@@ -26,6 +26,13 @@ jobs:
       - name: Scan with gitleaks
         id: scan-gitleaks
         uses: cloudbees-io/gitleaks-plugin@v1
+      - name: Scan with SonarQube plugin (own server; url/username are properties, password is a secret)
+        id: scan-sonarqube
+        uses: cloudbees-io/sonarqube-plugin@v1
+        with:
+          url: ${{ vars.SONARQUBE_URL }}
+          username: ${{ vars.SONARQUBE_USERNAME }}
+          password: ${{ secrets.SONARQUBE_PASSWORD }}
       - name: Compile and build image tar (no push)
         uses: docker://gcr.io/kaniko-project/executor:debug
         shell: sh

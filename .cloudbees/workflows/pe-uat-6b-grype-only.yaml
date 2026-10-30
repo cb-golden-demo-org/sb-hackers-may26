@@ -1,0 +1,59 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: pe-uat-6b-grype-only
+
+# Policy Engine UAT test 6: every scanner we can run that the policy engine can evaluate.
+# Phase 1: gosec, gitleaks (source), trivy, grype (image built from apps/claims-service,
+# which compiles the Go code inside its Dockerfile build stage). Tracker:
+# stu-claude/investigations/policy-engine-scanner-test-tracker.md
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  scm-token-own: read
+  scm-token-org: read
+
+jobs:
+  scan-all:
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Scan with gosec
+        id: scan-gosec
+        uses: cloudbees-io/gosec-plugin@v2
+      - name: Scan with gitleaks
+        id: scan-gitleaks
+        uses: cloudbees-io/gitleaks-plugin@v1
+      - name: Compile and build image tar (no push)
+        uses: docker://gcr.io/kaniko-project/executor:debug
+        shell: sh
+        run: |
+          /kaniko/executor \
+            --context /cloudbees/workspace \
+            --dockerfile /cloudbees/workspace/apps/claims-service/Dockerfile \
+            --no-push \
+            --destination claims-service:pe-uat-6 \
+            --tarPath /cloudbees/workspace/image.tar
+          ls -l /cloudbees/workspace/image.tar
+      - name: Scan image with grype
+        id: scan-grype
+        uses: cloudbees-io/grype-plugin@v1
+        with:
+          binary-tar-path: /cloudbees/workspace/image.tar
+      - name: Check policies
+        uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
+        with:
+          input-data: ${{ steps.scan-grype.outputs.policy-subject }}
+          checkpoint-type: workflow
+          checkpoint-position: exit
+
+  deploy:
+    needs:
+      - scan-all
+    steps:
+      - name: Deploy (simulated)
+        uses: docker://alpine:3.20
+        shell: sh
+        run: echo "deploy"

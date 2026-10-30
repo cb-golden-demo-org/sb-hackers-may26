@@ -41,7 +41,7 @@ jobs:
           echo "== go list ./... from the repo root (first 10 lines)"
           go list ./... 2>&1 | head -10 || true
           echo "== gosec -no-fail ./... from the repo root (issues and summary)"
-          $G -no-fail -fmt=text ./... 2>&1 | grep -E "^\[|Issues|Files|error|Error|go.mod" | head -40 || true
+          $G -no-fail -fmt=text ./... 2>&1 | grep -E "\] - G[0-9]+|Issues|Files :|rror|go.mod|warning" || true
       - name: Scan with gosec
         id: scan-gosec
         uses: cloudbees-io/gosec-plugin@v2

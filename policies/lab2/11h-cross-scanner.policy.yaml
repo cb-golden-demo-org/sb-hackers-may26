@@ -1,0 +1,24 @@
+schema_version: alpha
+name: pe-uat-11-11h-cross-scanner - match all critical gte 1 (SonarQube) and findings code eq CWE-295 (Gosec)
+description: PE UAT combined lab case 11h-cross-scanner - match all critical gte 1 (SonarQube) and findings code eq CWE-295 (Gosec). Expected to fire. Combined data is critical 36, high 6, medium 2, low 4, total 48 from Gosec and SonarQube. Workflow pe-uat-11-combined-lab only. Safe to delete.
+category: Security
+subjects:
+  - type: vulnerability_scan
+scope:
+  - type: workflow
+    org_id: fcf32b98-01a8-4784-80c9-8b44e336644d
+    component_id: be226259-df6a-437b-8116-7d8521efc6f4
+    workflow_name: pe-uat-11-combined-lab
+rules:
+  - name: 11h-cross-scanner
+    action: WARN
+    match: all
+    checks:
+      - name: critical
+        field: "vulnerability_scan.summary.by_severity.critical"
+        operator: gte
+        value: 1
+      - name: gosec-code
+        field: "vulnerability_scan.findings[].code"
+        operator: eq
+        value: "CWE-295"

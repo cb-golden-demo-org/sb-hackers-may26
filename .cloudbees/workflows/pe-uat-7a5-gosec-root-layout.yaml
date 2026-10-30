@@ -1,0 +1,53 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: pe-uat-7a5-gosec-root-layout
+
+# Policy Engine UAT test 7a-5: does the missing go.mod at the repo root explain why the Unify
+# gosec-plugin reports 0 findings? Control A runs raw gosec inside the fixture module (known to
+# find 4 issues). Control B runs raw gosec from the repo root, which is how the plugin runs it.
+# Tracker: stu-claude/investigations/policy-engine-scanner-test-tracker.md
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  scm-token-own: read
+  scm-token-org: read
+
+jobs:
+  scan-gosec:
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Control A - raw gosec inside the fixture module (not read by the policy)
+        uses: docker://securego/gosec:latest
+        shell: sh
+        run: |
+          set -u
+          G=$(command -v gosec || echo /bin/gosec)
+          cd pe-uat-fixtures/gosec-g402
+          $G -no-fail -fmt=text ./... 2>&1 | grep -E "^\[|Issues" || true
+      - name: Control B - raw gosec from the repo root, as the plugin runs it (not read by the policy)
+        uses: docker://securego/gosec:latest
+        shell: sh
+        run: |
+          set -u
+          G=$(command -v gosec || echo /bin/gosec)
+          echo "== go.mod at the repo root?"
+          ls -la go.mod 2>&1 || true
+          echo "== go version"
+          go version 2>&1 || true
+          echo "== go list ./... from the repo root (first 10 lines)"
+          go list ./... 2>&1 | head -10 || true
+          echo "== gosec -no-fail ./... from the repo root (issues and summary)"
+          $G -no-fail -fmt=text ./... 2>&1 | grep -E "^\[|Issues|Files|error|Error|go.mod" | head -40 || true
+      - name: Scan with gosec
+        id: scan-gosec
+        uses: cloudbees-io/gosec-plugin@v2
+      - name: Check policies
+        uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
+        with:
+          input-data: ${{ steps.scan-gosec.outputs.policy-subject }}
+          checkpoint-type: workflow
+          checkpoint-position: exit

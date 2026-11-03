@@ -1,0 +1,33 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: pe-uat-14b-no-scan
+
+# Policy Engine UAT test 14b: a "scan required" BLOCK policy against a workflow with NO scan step.
+# Expected: the check step fails (missing required subject vulnerability_scan) and deploy does not run.
+# Tracker: stu-claude/investigations/policy-engine-scanner-test-tracker.md
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  scm-token-own: read
+  scm-token-org: read
+
+jobs:
+  build:
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Check policies
+        uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
+        with:
+          checkpoint-type: workflow
+          checkpoint-position: exit
+  deploy:
+    needs: build
+    steps:
+      - name: Simulated deploy
+        uses: docker://alpine:3.20
+        shell: sh
+        run: echo "deploy ran, so the run with no scan was NOT blocked"

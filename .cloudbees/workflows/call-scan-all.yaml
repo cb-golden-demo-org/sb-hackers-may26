@@ -5,9 +5,13 @@ name: call-scan-all
 on:
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  scm-token-own: read
+  scm-token-org: read
+
 jobs:
   scan:
     uses: cb-golden-demo-org/sb-hackers-may26/scan-all.yaml
     vars: inherit
     secrets: inherit
-

@@ -20,9 +20,9 @@ jobs:
         id: scan-gosec
         uses: cloudbees-io/gosec-plugin@v2
 
-      # - name: Check policies
-      #   uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
-      #   with:
-      #     input-data: ${{ steps.scan-gosec.outputs.policy-subject }}
-      #     checkpoint-type: workflow
-      #     checkpoint-position: exit
+      - name: Check policies
+        uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
+        with:
+          input-data: ${{ steps.scan-gosec.outputs.policy-subject }}
+          checkpoint-type: workflow
+          checkpoint-position: exit

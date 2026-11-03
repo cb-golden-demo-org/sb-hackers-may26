@@ -1,0 +1,47 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: pe-uat-16-trivy-vuln
+
+# Policy Engine UAT test 16: Trivy finds known vulnerabilities (planted old base image).
+# Deliberately NO "Check policies" step: tests whether a job-scoped policy at exit is
+# evaluated by the platform alone (as in the SDeyris test-policy workflow).
+# Tracker: stu-claude/investigations/policy-engine-scanner-test-tracker.md
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  scm-token-own: read
+  scm-token-org: read
+
+jobs:
+  scan:
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Build image tar (no push)
+        uses: docker://gcr.io/kaniko-project/executor:debug
+        shell: sh
+        run: |
+          /kaniko/executor \
+            --context /cloudbees/workspace/pe-uat-fixtures/trivy \
+            --dockerfile /cloudbees/workspace/pe-uat-fixtures/trivy/Dockerfile \
+            --no-push \
+            --destination pe-uat-16:fixture \
+            --tarPath /cloudbees/workspace/image.tar
+      - name: Scan image with trivy
+        id: scan-trivy
+        kind: scan
+        uses: cloudbees-io/trivy-plugin@v2
+        with:
+          binary-tar-path: /cloudbees/workspace/image.tar
+
+  deploy:
+    needs:
+      - scan
+    steps:
+      - name: Deploy (simulated)
+        uses: docker://alpine:3.20
+        shell: sh
+        run: echo "deploy"

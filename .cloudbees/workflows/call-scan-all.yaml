@@ -12,6 +12,6 @@ permissions:
 
 jobs:
   scan:
-    uses: cb-golden-demo-org/sb-hackers-may26/scan-all.yaml
+    uses: cb-golden-demo-org/sb-hackers-may26/.cloudbees/workflows/scan-all.yaml@main
     vars: inherit
     secrets: inherit

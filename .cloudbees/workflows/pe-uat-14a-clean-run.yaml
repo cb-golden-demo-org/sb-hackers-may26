@@ -1,0 +1,45 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: pe-uat-14a-clean-run
+
+# Policy Engine UAT test 14a: a clean run under a BLOCK policy must pass.
+# The only Go file in this branch is pe-uat-fixtures/clean/main.go (no findings).
+# The control step proves raw gosec really looked at that file, so a 0 is a real 0.
+# Tracker: stu-claude/investigations/policy-engine-scanner-test-tracker.md
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  scm-token-own: read
+  scm-token-org: read
+
+jobs:
+  scan:
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - name: Control - raw gosec from the repo root, shows which files it scanned (not read by the policy)
+        uses: docker://securego/gosec:latest
+        shell: sh
+        run: |
+          set -u
+          G=$(command -v gosec || echo /bin/gosec)
+          $G -no-fail -fmt=text ./... 2>&1 | grep -E "Files :|Lines :|Issues :|\] - G[0-9]+" || true
+      - name: Scan with gosec
+        id: scan-gosec
+        uses: cloudbees-io/gosec-plugin@v2
+      - name: Check policies
+        uses: cloudbees-io/policy-check/actions/evaluate-policy-context@v1
+        with:
+          input-data: ${{ steps.scan-gosec.outputs.policy-subject }}
+          checkpoint-type: workflow
+          checkpoint-position: exit
+  deploy:
+    needs: scan
+    steps:
+      - name: Simulated deploy
+        uses: docker://alpine:3.20
+        shell: sh
+        run: echo "deploy ran, so the clean run was not blocked"

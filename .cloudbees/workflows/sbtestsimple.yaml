@@ -26,3 +26,11 @@ jobs:
       #    input-data: ${{ steps.scan-gosec.outputs.policy-subject }}
       #    checkpoint-type: workflow
       #    checkpoint-position: exit
+
+  dummy:
+    needs: scan
+    steps:
+      - name: Dummy job
+        uses: docker://alpine:3.20
+        shell: sh
+        run: echo "Dummy job after scan"

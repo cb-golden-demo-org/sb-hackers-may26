@@ -1,0 +1,17 @@
+schema_version: alpha
+name: pe-uat-15a1-no-subjects-no-scan - no subjects block, no scan data
+description: PE UAT test 15a1-no-subjects-no-scan (policy has NO subjects block and the workflow has no scan, so does the missing-data BLOCK still happen). Repo cb-golden-demo-org/sb-hackers-may26, branch pe-uat-15-policy-model, workflow pe-uat-15a1-no-subjects-no-scan. Policy file policies/pe-uat-15a1-no-subjects-no-scan.policy.yaml. Scoped to this one test workflow only. Safe to delete.
+category: Security
+scope:
+  - type: workflow
+    org_id: fcf32b98-01a8-4784-80c9-8b44e336644d
+    component_id: be226259-df6a-437b-8116-7d8521efc6f4
+    workflow_name: pe-uat-15a1-no-subjects-no-scan
+rules:
+  - name: High severity findings
+    action: BLOCK
+    checks:
+      - name: high count check
+        field: "vulnerability_scan.summary.by_severity.high"
+        operator: gt
+        value: 0
